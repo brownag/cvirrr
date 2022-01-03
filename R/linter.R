@@ -37,8 +37,8 @@ cleanCVIR <- function(cvir) {
 #' @return character
 #' @export
 capitalizeKeywords <- function(x) {
-  CVIR_TOKEN <- NULL
-  load(system.file("data/CVIR_TOKEN.rda", package = "cvirrr")[1])
+  CVIR_TOKEN <- getCVIRTokens()
+  # load(system.file("data/CVIR_TOKEN.rda", package = "cvirrr")[1])
 
   # TODO: this probably needs to be smarter about preserving contents of string literals
   #       to do it properly we can't just berate the raw CVIR with regex patterns

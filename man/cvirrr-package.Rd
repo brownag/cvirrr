@@ -4,9 +4,12 @@
 \name{cvirrr-package}
 \alias{cvirrr}
 \alias{cvirrr-package}
-\title{cvirrr: What the Package Does (Title Case)}
+\title{cvirrr: NASIS Calculation Validation Interpretation and Report Parser}
 \description{
-More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Tools for evaluating Calculation Validation Interpretation Report (CVIR) scripts outside of the U.S. Department of Agriculture Natural Resources Conservation Service (USDA-NRCS) National Soil Information System (NASIS)
+}
+\author{
+\strong{Maintainer}: Andrew Brown \email{andrew.g.brown@usda.gov}
+
 }
 \keyword{internal}

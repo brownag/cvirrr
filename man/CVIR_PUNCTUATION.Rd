@@ -5,7 +5,7 @@
 \alias{CVIR_PUNCTUATION}
 \title{CVIR Punctuation}
 \format{
-An object of class \code{character} of length 27.
+An object of class \code{character} of length 28.
 }
 \usage{
 data(CVIR_PUNCTUATION)

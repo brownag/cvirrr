@@ -1,5 +1,6 @@
 # lex phase 1 uses a series of regex patterns to classify individual characters into one of 4 classes
 # this allows a little more context to be derived than working with individual characters
+#' @importFrom data.table rbindlist
 .lex1 <- function(chr) {
   y <- vector("numeric", length(chr))
 
@@ -15,12 +16,12 @@
   y[pidx] <- 3
 
   lr <- factor(y, levels = 0:3, labels = c("unknown", "whitespace", "identifier", "punctuation"))
-  gr <- list(cumsum(c(0, abs(diff(as.integer(lr))) > 0)) + 1)
-  res <- split(1:length(lr), f = gr)
-  ti <- split(lr, f = gr)
-  attr(res, 'token_info') <- do.call('rbind', lapply(seq_along(ti), function(i) data.frame(iid = i,
-                                                                    type = as.character(ti[[i]][1]),
-                                                                    length = length(ti[[i]]))))
+  gr <- cumsum(c(0, abs(diff(as.integer(lr))) > 0)) + 1
+  res <- split(1:length(lr), f = list(gr))
+  .N <- NULL
+  .dt <- data.table::data.table(type = lr, group = gr)
+  attr(res, 'token_info') <- as.data.frame(.dt[, list(length=.N), by = list(type, group)])
+
   res
 }
 
@@ -102,7 +103,7 @@
       }
       if (length(idx) > 0 & quoted[i]) {
         strings[strid] <- paste0(do.call('c', lapply(stl[[i]], function(x) {
-          res <- x[x != 280]
+          res <- x[x != 101 & x != 280] # TODO: handle colons
           if (!is.null(names(res)))
             return(id_to_token(res)) # TODO: avoid case change of tokens between quotes e.g. Data -> DATA
           res
@@ -140,7 +141,7 @@
   #  then remove any subsequent blocks corresponding to that quoted string
   for (i in seq_along(strings)) {
     x <- block[[stq_replace[i]]]
-    block[[stq_replace[i]]] <- c(x[x != 280], `STRING_LITERAL` = 220)
+    block[[stq_replace[i]]] <- c(x[x != 101 & x != 280], `STRING_LITERAL` = 220)
   }
   block <- block[-do.call('c', stq_remove)]
 
