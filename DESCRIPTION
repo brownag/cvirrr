@@ -1,0 +1,19 @@
+Package: cvirrr
+Type: Package
+Title: NASIS Calculation Validation Interpretation and Report Parser
+Version: 0.0.0.9001
+Authors@R: 
+    person(given = "Andrew",
+           family = "Brown",
+           role = c("aut", "cre"),
+           email = "andrew.g.brown@usda.gov")
+Maintainer: Andrew G. Brown <andrew.g.brown@usda.gov>
+Description: Tools for evaluating Calculation Validation Interpretation Report (CVIR) scripts outside of the U.S. Department of Agriculture Natural Resources Conservation Service (USDA-NRCS) National Soil Information System (NASIS)
+License: GPL (>= 3)
+Encoding: UTF-8
+RoxygenNote: 7.1.2
+Depends: 
+    R (>= 2.10)
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

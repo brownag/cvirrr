@@ -1,0 +1,77 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# cvirrr
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+The primary goal of {cvirrr} is to evaluate Calculation Validation Interpretation Report (CVIR) scripts outside of [National Soil Information System (NASIS)](https://www.nrcs.usda.gov/wps/portal/nrcs/detail/soils/survey/tools/?cid=nrcs142p2_053554).
+NASIS makes use of the [ANTLR](https://www.antlr.org/) (ANother Tool for Language Recognition) parser generator to implement conversion of CVIR to SQL internally.
+
+Methods in {cvirrr} handle lexing and parsing of CVIR outside of NASIS/ANTLR. Scripts are pre-processed, tokenized and parsed into an Abstract Syntax Tree. The Abstract Syntax Tree can then be evaluated as a combination of R code and SQL.
+
+## What is CVIR?
+
+CVIR is the scripting language for NASIS Calculations, Validations, Interpretations, and Reports. CVIR is used in the latest versions of NASIS and Web Soil Survey Rule and Report Manager.
+
+The [NASIS CVIR Language Manual](https://www.nrcs.usda.gov/Internet/FSE_DOCUMENTS/nrcs142p2_053305.pdf) provides details on CVIR syntax. 
+
+The language implements a mixture of syntax from SQL and Informix to facilitate doing calculations on data sources (generally queried from the database) and generating structured reports. The syntax is "familiar," but unique, and NASIS is currently the only tool that can evaluate CVIR scripts.
+
+## Motivation
+
+A significant amount of the business logic of the Soil and Plant Science Division is encoded in CVIR. While the NASIS interface is a powerful and unique platform for data analysis and managing CVIR scripts, there would be significant benefit to being able to derive information from and process CVIR scripts using R.
+For instance this would allow us to more readily re-use internal NASIS logic with external data sources, more readily conduct automated/batch analyses, and would provide opportunities for enhanced graphics and formatting.
+
+There is an immediate interest in being able to evaluate CVIR from R in order to dynamically derive inputs for the new [ncss-tech/InterpretationEngine](http://github.com/ncss-tech/interpretation-engine) package. {cvirrr} is intended to be lightweight and focused; implemented as a layer beneath the functionality planned to be provided by InterpretationEngine.
+
+## Installation
+
+You can install the latest version of {cvirrr} from GitHub using the {remotes} package
+
+``` r
+# install.packages("remotes")
+remotes::install_github("brownag/cvirrr")
+```
+
+## Example
+
+For an example, we will load a CVIR script 
+
+```{r weightedAverageGypsum-example}
+library(cvirrr)
+
+cvir <- readLines("https://gist.githubusercontent.com/brownag/9e108e3b66251794556660dc1607d695/raw/47a5b916598bfc3ae62da566c0a3fbd5d20d901a/DustfromGypsumContent2to15Percent.cvir.sql", warn = FALSE)
+```
+
+`cleanCVIR()` is how CVIR scripts are pre-processed to remove non-essential markup and get expressions on a single line.
+
+### Before 
+
+Initially we have a CVIR script with comments, white space, and statements spanning multiple lines.
+
+```{r weightedAverageGypsum-before}
+cat(cvir, sep = "\n")
+```
+
+### After
+
+After "cleaning" we have the same script with comments removed, white space reduced and individual statements collapsed into single lines.
+
+```{r weightedAverageGypsum-after}
+cleanCVIR(cvir) |>
+  cat(sep = "\n")
+```
