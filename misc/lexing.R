@@ -37,5 +37,5 @@ tokenize <- function(id, con = raw()) writeBin(id, con = con, endian = "little")
 
 tokens <- lapply(instructions, tokenize)
 
-writeBin(instructions, "test.bin")
-readBin("test.bin", what = "numeric", size = 8, n = length(instructions))
+readBin(writeBin(instructions, raw(), size = 4),
+        what = "numeric", size = 4, n = length(instructions))
