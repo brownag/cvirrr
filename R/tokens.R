@@ -371,8 +371,16 @@ getCVIRTokens <- function() c(
 )
 
 getCVIRPunctuation <- function() c(
-  UNARY_PLUS = "+",# 0x37,
-  UNARY_MINUS = "-",#0x38,
+  # UNARY_PLUS = "+",# 0x37,
+  # UNARY_MINUS = "-",#0x38,
+  SQL_COLUMNS = "SELECT",
+  SQL_TABLE_SPEC = "JOIN",
+  SQL_TABLE_SPEC = "TO",
+  SQL_CVIR_WHERE_CONDITION = "WHERE",
+  SQL_COLUMNS = "select",
+  SQL_TABLE_SPEC = "join",
+  SQL_TABLE_SPEC = "to",
+  SQL_CVIR_WHERE_CONDITION = "where",
   DOT = ".",# 0x41,
   COMMENT = "#", #0x42,
   COMMA = ",",# 0x45,

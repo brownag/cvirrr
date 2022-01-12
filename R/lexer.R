@@ -7,28 +7,30 @@
   .is_whitespace <- function(x)  x %in% c("\n", " ", "\t")
   .is_identifier <- function(x) grepl("[A-Za-z_0-9]", x)
   .is_punctuation <- function(x)  grepl("[\\[\\]\\{\\}]|-|,|\\(|\\)|\\.|\\:|\\?|\\*|<|\\=|>|/|\\\"|\\;", x)
+  .is_quoted <- function(x) as.logical(cumsum(x == "\"") %% 2)
 
   widx <- .is_whitespace(chr)
   iidx <- .is_identifier(chr)
   pidx <- .is_punctuation(chr)
+  qidx <- .is_quoted(chr)
   y[widx] <- 1
   y[iidx] <- 2
   y[pidx] <- 3
+  y[qidx] <- 4
 
-  lr <- factor(y, levels = 0:3, labels = c("unknown", "whitespace", "identifier", "punctuation"))
+  lr <- factor(y, levels = 0:4, labels = c("unknown", "whitespace", "identifier", "punctuation", "string"))
   gr <- cumsum(c(0, abs(diff(as.integer(lr))) > 0)) + 1
   res <- split(1:length(lr), f = list(gr))
   .N <- NULL
   .dt <- data.table::data.table(type = lr, group = gr)
-  attr(res, 'token_info') <- as.data.frame(.dt[, list(length=.N), by = list(type, group)])
+  attr(res, 'token_info') <- as.data.frame(.dt[, list(length = .N), by = list(type, group)])
 
   res
 }
 
 # lex phase 2 finds blocks where all characters are keywords or multiple symbols
 .lex2 <- function(block, token, symbol) {
-
-  # which(token_info$type == "punctuation" & token_info$length > 1)
+  token_info <- attr(block, 'token_info')
   out <- vector('list', length(block))
   for (i in 1:length(block)) {
     tb <- token[block[[i]]]
@@ -37,7 +39,7 @@
     if (all(is.na(tb))) {
       # combine block elements and do token lookup
       sym <- symbol[block[[i]]]
-      ctb <- token_to_id(paste0(sym, collapse=""))
+      ctb <- token_to_id(paste0(sym, collapse = ""))
 
       if (!is.na(ctb)) {
         # block matches a multi-character token
@@ -63,7 +65,13 @@
     }
     out[[i]] <- tb
   }
-  attr(out, 'token_info') <- attr(block, 'token_info')
+
+  strings <- lapply(block[token_info[token_info$type == "string", ]$group],
+                    function(x) paste0(symbol[x[-1]], collapse = ""))
+
+  out[as.numeric(names(strings))] <- strings
+
+  attr(out, 'token_info') <- token_info
   out
 }
 
@@ -75,75 +83,84 @@
 .lex3 <- function(block) {
 
   # first parse quotes to get string literals
-  qut <- sapply(block, function(x) sum(x == 280))
-  nstr <- (sum(qut) / 2) # calculate number of string literals expected
-  stopifnot(nstr %% 2 == 0) # all quotes must be paired
+  # qut <- sapply(sapply(block, function(x) x == 280), any)
+  # nstr <- (sum(qut, na.rm = TRUE) / 2) # calculate number of string literals expected
+  # stopifnot(nstr %% 2 == 0) # all quotes must be paired
 
-  # break up the list of blocks into sets that correspond to unquoted/quoted regions
-  qid <- cumsum(qut) + 1
-  stl <- split(block, qid)
-  stl1 <- sapply(stl, function(x) sum(sapply(x, function(y) sum(y == 280))) %in% 1:2)
+  # # break up the list of blocks into sets that correspond to unquoted/quoted regions
+  # qid <- cumsum(qut)
+  # quoted <- as.logical(qid %% 2)
 
-  quoted <- vector('logical', length(stl))
-  strings <- vector('character', nstr)
-  stridx <- vector('numeric', nstr)
-  strid <- 1
-
-  bad.idx <- vector("list", length(stl))
-
-  # iterate over quoted chunks, removing quote character,
-  # undoing any keywords converted in .lex2 within quoted blocks
-  for (i in seq_along(stl)) {
-    if (stl1[i]) {
-      idx <- which(unlist(stl[[i]]) == 280)
-      if (length(idx) == 1) {
-        quoted[i] <- !quoted[i - 1] # toggle quoted var
-      } else if (length(idx) == 2) {
-        quoted[i] <- quoted[i - 1] # keep status of quoted var (new string)
-      }
-      if (length(idx) > 0 & quoted[i]) {
-        strings[strid] <- paste0(do.call('c', lapply(stl[[i]], function(x) {
-          res <- x[x != 101 & x != 280] # TODO: handle colons
-          if (!is.null(names(res)))
-            return(id_to_token(res)) # TODO: avoid case change of tokens between quotes e.g. Data -> DATA
-          res
-        })), collapse = "")
-        stridx[strid] <- i
-        strid <- strid + 1
-      } else if(length(idx) > 0 & !quoted[i]) {
-        bad.idx[[i]] <- data.frame(idx = idx, i = i)
-      }
-    }
-  }
+  # stl <- split(block, qid)
+  # stl1 <- sapply(stl, function(x) sum(sapply(x, function(y) sum(y == 280))) %in% 1:2)
+  #
+  # quoted <- vector('logical', length(stl))
+  # strings <- vector('character', nstr)
+  # stridx <- vector('numeric', nstr)
+  # strid <- 1
+  #
+  # bad.idx <- vector("list", length(stl))
+  #
+  # # iterate over quoted chunks, removing quote character,
+  # # undoing any keywords converted in .lex2 within quoted blocks
+  # for (i in seq_along(stl)) {
+  #   if (stl1[i]) {
+  #     idx <- which(unlist(stl[[i]]) == 280)
+  #     if (length(idx) == 1) {
+  #       quoted[i] <- !quoted[i - 1] # toggle quoted var
+  #     } else if (length(idx) == 2) {
+  #       quoted[i] <- quoted[i - 1] # keep status of quoted var (new string)
+  #     }
+  #     if (length(idx) > 0 & quoted[i]) {
+  #       strings[strid] <- paste0(do.call('c', lapply(stl[[i]], function(x) {
+  #         res <- x[x != 101 & x != 280] # TODO: handle colons
+  #         if (!is.null(names(res)))
+  #           return(id_to_token(res)) # TODO: avoid case change of tokens between quotes e.g. Data -> DATA
+  #         res
+  #       })), collapse = "")
+  #       stridx[strid] <- i
+  #       strid <- strid + 1
+  #     } else if(length(idx) > 0 & !quoted[i]) {
+  #       bad.idx[[i]] <- data.frame(idx = idx, i = i)
+  #     }
+  #   }
+  # }
 
   # replace the first block in the string with a reference to string literal
-  stq <- lapply(split(qid, qid)[which(quoted)], function(x) which(x[1] == qid))
-  stq_replace <- sapply(stq, function(x) x[1])
-  stq_remove <- lapply(stq, function(x) x[2:length(x)])
+  # stq <- lapply(split(qid, qid)[which(quoted)], function(x) which(x[1] == qid))
+  # stq_replace <- sapply(stq, function(x) x[1])
+  # stq_remove <- lapply(stq, function(x) x[2:length(x)])
 
-  # remove closing quotes from otherwise unquoted blocks
-  bad_quoteblk <- sapply(split(qid, qid)[do.call('rbind', bad.idx)$i],
-                         function(x) which(x[1] == qid)[1])
-  block[bad_quoteblk] <- lapply(block[bad_quoteblk], function(x) x[x != 280])
+  # # remove closing quotes from otherwise unquoted blocks
+  # bad_quoteblk <- sapply(split(qid, qid)[do.call('rbind', bad.idx)$i],
+  #                        function(x) which(x[1] == qid)[1])
+  # block[bad_quoteblk] <- lapply(block[bad_quoteblk], function(x) x[x != 280])
 
   # data.frame of string literal references
-  string_literals <- data.frame(uid = 1:nstr, value = strings)
-  string_literals$group_id <- match(strings, unique(strings))
-  string_literals$block_id <- stq_replace
+  # string_literals <- data.frame(uid = 1:nstr, value = strings)
+  # string_literals$group_id <- match(strings, unique(strings))
+  # string_literals$block_id <- stq_replace
 
   # remove whitespace now that strings have been parsed
   token_info <- attr(block, 'token_info')
-  wht <- token_info[token_info$type == "whitespace",]$iid
+  wht <- token_info[token_info$type == "whitespace",]$group
   if (length(wht) > 0) {
-    block[wht] <- list(double(0))[rep(1, length(wht))]
+    block[wht] <- list(0)[rep(1, length(wht))]
   }
 
-  #  then remove any subsequent blocks corresponding to that quoted string
-  for (i in seq_along(strings)) {
-    x <- block[[stq_replace[i]]]
-    block[[stq_replace[i]]] <- c(x[x != 101 & x != 280], `STRING_LITERAL` = 220)
+  stri <- which(token_info$type == "string")
+  strv <- unlist(block[stri])
+  if (length(stri) > 0) {
+    block[stri] <- c(`STRING_LITERAL` = 220)
+    block[stri + 1] <- sapply(block[stri + 1], function(x) x[x != 280])
   }
-  block <- block[-do.call('c', stq_remove)]
+
+  # #  then remove any subsequent blocks corresponding to that quoted string
+  # for (i in seq_along(strings)) {
+  #   x <- block[[stq_replace[i]]]
+  #   block[[stq_replace[i]]] <- c(x[x != 101 & x != 280], `STRING_LITERAL` = 220)
+  # }
+  # block <- block[-do.call('c', stq_remove)]
 
   # remaining "unknowns" are assumed to be (expressions involving) identifiers for numbers or other tabular data,
   # each unique instance will be assigned a pointer that identifies their label and value as needed
@@ -170,6 +187,12 @@
   data_identifiers$block_id = all_block_ids[!is_numeric]
   block[!is.na(identifiers)][!is_numeric] <- c(`VARIABLE` = 97) # TODO: is this the best bytecode for these?
                                          # there are more specific things like COLUMN, SQL_COLUMN... next lex step?
+  string_literals <- data.frame(
+    uid = 1:length(stri) + length(is_numeric),
+    value = strv,
+    group_id = as.numeric(factor(strv)),
+    block_id = stri
+  )
 
   # fix names
   blockvals <- do.call('c', block)
@@ -177,6 +200,7 @@
     blocknames <- names(block[[i]])
     blocknames[block[[i]] == 84] <- "NUMERIC"
     blocknames[block[[i]] == 97] <- "VARIABLE"
+    blocknames[block[[i]] == 220] <- "STRING_LITERAL"
     names(block[[i]]) <- blocknames
     block[[i]]
   })
