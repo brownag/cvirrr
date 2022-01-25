@@ -1,4 +1,6 @@
 library(cvirrr)
+library(soilDB)
+library(InterpretationEngine)
 
 cvir <- readLines("https://gist.githubusercontent.com/brownag/9e108e3b66251794556660dc1607d695/raw/47a5b916598bfc3ae62da566c0a3fbd5d20d901a/DustfromGypsumContent2to15Percent.cvir.sql", warn = FALSE)
 
@@ -70,8 +72,8 @@ propsub <- match(attr(res2, "CVIR_INFORMIX_DERIVE_PROPERTY_SCRIPT"), prop$propna
 to_derive <- attr(res2, "CVIR_INFORMIX_DERIVE")
 deriv_prop <- lapply(seq_along(to_derive), function(i) propdef[prop[propsub[i],]$propiid == propdef$propiid,]$prop)
 names(deriv_prop) <-  to_derive
-
-deriv_prop <- lapply(deriv_prop, function(x) process(parseCVIR(capitalizeKeywords(cleanCVIR(x)))))
+deriv_prop2 <- lapply(deriv_prop, function(x) process(parseCVIR(capitalizeKeywords(cleanCVIR(x)))))
+# deriv_prop2 <- lapply(deriv_prop, function(x) process(parseCVIR(capitalizeKeywords(cleanCVIR(x)))))
 
 
 # serialization to binary
