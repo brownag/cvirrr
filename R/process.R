@@ -193,7 +193,7 @@ process.CVIRScript <- function(x) {
           } else if (mode == 17) {
             informix_expr_buffer <- c(informix_expr_buffer, id_to_token(k))
           }
-        } else if (k == 146) {# DEFINE
+        } else if (k == 146 | k == 147) {# DEFINE/ASSIGN
           if (mode == 0) {
             mode <- 16
           }
@@ -202,6 +202,10 @@ process.CVIRScript <- function(x) {
             attr(x, 'CVIR_SQL_WHERE') <- c(attr(x, 'CVIR_SQL_WHERE'), sql_expr_buffer, id_to_token(k))
             sql_expr_buffer <- character(0)
           } else if (mode == 17) { # informix define
+            informix_expr_buffer <- c(informix_expr_buffer, id_to_token(k))
+          }
+        } else {
+          if (mode == 17) {
             informix_expr_buffer <- c(informix_expr_buffer, id_to_token(k))
           }
         }

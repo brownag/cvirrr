@@ -15,7 +15,7 @@ cleanCVIR <- function(cvir) {
   }
 
   .rmComments <- function(x) gsub("([^#]*)#.*", "\\1", x)
-  .rmTabs <- function(x) gsub("\\t", "", x)
+  .rmTabs <- function(x) gsub("\\t", " ", x)
   .shortWhitespace <- function(x) gsub("\\s+", " ", trimws(x))
   .rmZeroLength <- function(x) x[nchar(x) > 0]
 

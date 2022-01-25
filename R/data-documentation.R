@@ -19,3 +19,12 @@
 #' @usage data(CVIR_PUNCTUATION)
 #'
 "CVIR_PUNCTUATION"
+
+# #' @title NASIS Calculations
+# #'
+# #' @description Snapshot of NASIS Calculations
+# #'
+# #' @keywords datasets
+# #' @usage data(NASIS_CALCULATIONS)
+# #'
+# "NASIS_CALCULATIONS"
