@@ -187,8 +187,11 @@
   data_identifiers$block_id = all_block_ids[!is_numeric]
   block[!is.na(identifiers)][!is_numeric] <- c(`VARIABLE` = 97) # TODO: is this the best bytecode for these?
   # there are more specific things like COLUMN, SQL_COLUMN... next lex step?
+  stridx <- numeric(0)
+  if (length(stri) > 0)
+    stridx <- 1:length(stri) + length(is_numeric)
   string_literals <- data.frame(
-    uid = 1:length(stri) + length(is_numeric),
+    uid = stridx,
     value = strv,
     group_id = as.numeric(factor(strv)),
     block_id = stri
