@@ -10,7 +10,7 @@
 CVIRScript(x)
 }
 \arguments{
-\item{x}{a character containing CVIR code}
+\item{x}{a character vector containing CVIR code}
 }
 \description{
 Initiate a CVIRScript from character string

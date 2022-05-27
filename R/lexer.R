@@ -21,7 +21,7 @@
   lr <- factor(y, levels = 0:4, labels = c("unknown", "whitespace", "identifier", "punctuation", "string"))
   gr <- cumsum(c(0, abs(diff(as.integer(lr))) > 0)) + 1
   res <- split(1:length(lr), f = list(gr))
-  .N <- NULL
+  .N <- NULL; type <- NULL; group <- NULL
   .dt <- data.table::data.table(type = lr, group = gr)
   attr(res, 'token_info') <- as.data.frame(.dt[, list(length = .N), by = list(type, group)])
 

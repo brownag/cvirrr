@@ -355,6 +355,7 @@ parseCVIR_SQL <- function(x) UseMethod("parseCVIR_SQL", x)
 #' @export
 #' @aliases pop
 #' @rdname pop
+#' @importFrom utils head
 pop.CVIRScript <- function(x, instruction, n = 1, what = "value") {
   att <- switch(as.character(instruction),
                 `84` = "numeric_literals",
@@ -364,7 +365,7 @@ pop.CVIRScript <- function(x, instruction, n = 1, what = "value") {
                 `220` = "string_literals",
                 `STRING_LITERAL` = "string_literals")
   ax <- attr(x, att)
-  res <- head(ax, n)
+  res <- utils::head(ax, n)
   if (n >= 1) {
     ax <- ax[-(1:n),]
   }
