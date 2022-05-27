@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 <!-- badges: end -->
 
 The primary goal of {cvirrr} is to evaluate Calculation Validation Interpretation Report (CVIR) scripts outside of [National Soil Information System (NASIS)](https://www.nrcs.usda.gov/wps/portal/nrcs/detail/soils/survey/tools/?cid=nrcs142p2_053554).
-NASIS makes use of the [ANTLR](https://www.antlr.org/) (ANother Tool for Language Recognition) parser generator to implement conversion of CVIR to SQL internally.
+NASIS makes use of the [ANTLR](https://www.antlr.org/) (ANother Tool for Language Recognition) parser generator to interpret CVIR.
 
 Methods in {cvirrr} handle lexing and parsing of CVIR outside of NASIS/ANTLR. Scripts are pre-processed, tokenized and parsed into an Abstract Syntax Tree. The Abstract Syntax Tree can then be evaluated as a combination of R code and SQL.
 
