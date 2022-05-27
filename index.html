@@ -144,7 +144,8 @@
 <code class="sourceCode R"><span class="fu"><a href="reference/cleanCVIR.html">cleanCVIR</a></span><span class="op">(</span><span class="va">cvir</span><span class="op">)</span> |&gt;
   <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span>sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span>
 <span class="co">#&gt; base table component.</span>
-<span class="co">#&gt; EXEC SQL select hzdept_r, hzdepb_r, gypsum_l, gypsum_r, gypsum_h from component, chorizon where join component to chorizon and hzdepb_r &gt; hzdept_r; SORT BY hzdept_r AGGREGATE column hzdept_r none, hzdepb_r none, gypsum_l none, gypsum_r none, gypsum_h none.</span>
+<span class="co">#&gt; EXEC SQL select hzdept_r, hzdepb_r, gypsum_l, gypsum_r, gypsum_h from component, chorizon where join component to chorizon and hzdepb_r &gt; hzdept_r;</span>
+<span class="co">#&gt; SORT BY hzdept_r AGGREGATE column hzdept_r none, hzdepb_r none, gypsum_l none, gypsum_r none, gypsum_h none.</span>
 <span class="co">#&gt; DERIVE layer_thickness from rv using "NSSC Data":"LAYER THICKNESS IN RANGE; ABOVE VSTR RESTRICT BELOW O" (0,50).</span>
 <span class="co">#&gt; DERIVE depth from rv using "NSSC Data":"DEPTH TO FIRST STR/VSTR CEMENTED BELOW ORGANIC LAYER".</span>
 <span class="co">#&gt; DERIVE o_thickness from rv using "NSSC Pangaea":"THICKNESS OF SURFACE ORGANIC HORIZON".</span>
