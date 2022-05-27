@@ -4,6 +4,8 @@
 # cvirrr
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/brownag/cvirrr/workflows/R-CMD-check/badge.svg)](https://github.com/brownag/cvirrr/actions)
+[![cvirrr Manual](https://img.shields.io/badge/docs-HTML-informational)](http://humus.rocks/cvirrr/)
 <!-- badges: end -->
 
 The primary goal of {cvirrr} is to evaluate Calculation Validation
