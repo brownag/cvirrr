@@ -4,8 +4,10 @@
 # cvirrr
 
 <!-- badges: start -->
+
 [![R-CMD-check](https://github.com/brownag/cvirrr/workflows/R-CMD-check/badge.svg)](https://github.com/brownag/cvirrr/actions)
-[![cvirrr Manual](https://img.shields.io/badge/docs-HTML-informational)](http://humus.rocks/cvirrr/)
+[![cvirrr
+Manual](https://img.shields.io/badge/docs-HTML-informational)](http://humus.rocks/cvirrr/)
 <!-- badges: end -->
 
 The primary goal of {cvirrr} is to evaluate Calculation Validation
@@ -131,7 +133,8 @@ space reduced and individual statements collapsed into single lines.
 cleanCVIR(cvir) |>
   cat(sep = "\n")
 #> base table component.
-#> EXEC SQL select hzdept_r, hzdepb_r, gypsum_l, gypsum_r, gypsum_h from component, chorizon where join component to chorizon and hzdepb_r > hzdept_r; SORT BY hzdept_r AGGREGATE column hzdept_r none, hzdepb_r none, gypsum_l none, gypsum_r none, gypsum_h none.
+#> EXEC SQL select hzdept_r, hzdepb_r, gypsum_l, gypsum_r, gypsum_h from component, chorizon where join component to chorizon and hzdepb_r > hzdept_r;
+#> SORT BY hzdept_r AGGREGATE column hzdept_r none, hzdepb_r none, gypsum_l none, gypsum_r none, gypsum_h none.
 #> DERIVE layer_thickness from rv using "NSSC Data":"LAYER THICKNESS IN RANGE; ABOVE VSTR RESTRICT BELOW O" (0,50).
 #> DERIVE depth from rv using "NSSC Data":"DEPTH TO FIRST STR/VSTR CEMENTED BELOW ORGANIC LAYER".
 #> DERIVE o_thickness from rv using "NSSC Pangaea":"THICKNESS OF SURFACE ORGANIC HORIZON".
