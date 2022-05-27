@@ -21,7 +21,7 @@
   lr <- factor(y, levels = 0:4, labels = c("unknown", "whitespace", "identifier", "punctuation", "string"))
   gr <- cumsum(c(0, abs(diff(as.integer(lr))) > 0)) + 1
   res <- split(1:length(lr), f = list(gr))
-  .N <- NULL
+  .N <- NULL; type <- NULL; group <- NULL
   .dt <- data.table::data.table(type = lr, group = gr)
   attr(res, 'token_info') <- as.data.frame(.dt[, list(length = .N), by = list(type, group)])
 
@@ -181,14 +181,17 @@
   numeric_literals$block_id <- all_block_ids[is_numeric]
   block[!is.na(identifiers)][is_numeric] <- c(`NUMERIC` = 84)
 
-  # the rest of the identifers need are defined by some data reference
+  # the rest of the identifiers need are defined by some data reference
   data_identifiers <- data.frame(uid = which(!is_numeric), value = all_identifiers[!is_numeric])
   data_identifiers$group_id <- match(all_identifiers[!is_numeric], unique(all_identifiers[!is_numeric]))
   data_identifiers$block_id = all_block_ids[!is_numeric]
   block[!is.na(identifiers)][!is_numeric] <- c(`VARIABLE` = 97) # TODO: is this the best bytecode for these?
-                                         # there are more specific things like COLUMN, SQL_COLUMN... next lex step?
+  # there are more specific things like COLUMN, SQL_COLUMN... next lex step?
+  stridx <- numeric(0)
+  if (length(stri) > 0)
+    stridx <- 1:length(stri) + length(is_numeric)
   string_literals <- data.frame(
-    uid = 1:length(stri) + length(is_numeric),
+    uid = stridx,
     value = strv,
     group_id = as.numeric(factor(strv)),
     block_id = stri

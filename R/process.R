@@ -1,31 +1,39 @@
-# define process method
-#' Process a CVIR Script
+# define parsing method
+#' Parse a CVIR Script
 #' @param x a CVIRScript object
 #'
 #' @export
-#' @aliases process
-#' @rdname process
-process.CVIRScript <- function(x) {
+#' @aliases parseCVIR
+#' @rdname parseCVIR
+parseCVIR.CVIRScript <- function(x) {
   j <- 1
   buf <- vector('list', length(x))
   for (i in 1:length(x)) {
     # print(j)
 
-    instr <- res[[i]]
+    instr <- x[[i]]
     i_n <- length(instr)
 
-    res_numeric  <- pop(res, c(NUMERIC = 84), n = sum(instr == 84))
-    res_variable <- pop(res, c(VARIABLE = 97), n = sum(instr == 97))
-    res_string   <- pop(res, c(STRING_LITERAL = 220), n = sum(instr == 220))
+    res_numeric  <- pop(x, c(NUMERIC = 84), n = sum(instr == 84))
+    res_variable <- pop(x, c(VARIABLE = 97), n = sum(instr == 97))
+    res_string   <- pop(x, c(STRING_LITERAL = 220), n = sum(instr == 220))
 
     mode <- 0
 
     sql_expr_buffer <- character(0)
     informix_define <- character(0)
     informix_expr_buffer <- character(0)
+    uncode_strings <- FALSE
     for (k in instr) {
       if (k != 0) {
-        if (k == 95) {# base
+        # uncode state is off by default
+        if (mode == 0) {
+          uncode_strings <- FALSE
+        }
+
+        if (k == 93) { # accept
+          mode <- 18
+        } else if (k == 95) {# base
           mode <- 1
         } else if (k == 96) {# table
           if (mode == 1)
@@ -53,7 +61,11 @@ process.CVIRScript <- function(x) {
             base_table <- attr(x, 'CVIR_BASE_TABLE')
             if (is.null(base_table))
               base_table <- ""
-            if (sql_table != base_table)
+            if (sql_table == "default") {
+              attr(x, 'CVIR_SQL_DEFAULT_JOIN') <- TRUE
+              sql_table <- character(0)
+            }
+            if (length(sql_table) > 0 && sql_table != base_table)
               message("Added SQL table to script data sources: ", sql_table)
 
             attr(x, 'CVIR_SQL_TABLES') <- c(attr(x, 'CVIR_SQL_TABLES'), sql_table)
@@ -67,8 +79,8 @@ process.CVIRScript <- function(x) {
             base_table <- attr(x, 'CVIR_BASE_TABLE')
             if (is.null(base_table))
               base_table <- ""
-            if (sql_table != base_table)
-              message("Joining SQL table to base table: ", sql_table)
+            if (length(sql_table) > 0 && sql_table != base_table)
+              message("Joining SQL table ", sql_table, " to base table (", base_table, ")")
 
             attr(x, 'CVIR_SQL_JOIN_TABLES') <- c(attr(x, 'CVIR_SQL_JOIN_TABLES'), sql_table)
           } else if (mode == 10) { # informix sort by columns
@@ -92,6 +104,10 @@ process.CVIRScript <- function(x) {
           } else if (mode == 17) { # defined with expressions involving other data
             x <- pop(x, k)
             informix_expr_buffer <- c(informix_expr_buffer, attr(x, 'data'))
+          } else if (mode == 18) {
+            x <- pop(x, k)
+            new_column <- attr(x, 'data')
+            attr(x, 'CVIR_INFORMIX_ACCEPT') <- c(attr(x, 'CVIR_INFORMIX_ACCEPT'), new_column)
           }
 
         } else if (k == 84) {# numeric
@@ -107,6 +123,17 @@ process.CVIRScript <- function(x) {
           string <- attr(x, 'string')
 
           if (mode == 7) { # SQL WHERE clause
+            if (uncode_strings) {
+              d <- data.frame(V1 = string)
+              colnames(d) <- attr(x, 'data') # last data name on stack
+              d2 <- soilDB::uncode(d, invert = TRUE)[1, 1]
+              print(string)
+              if (!is.na(d2) && d2 != string) {
+                string <- d2
+              } else string <- sQuote(string, q = "'")
+            } else {
+              string <- sQuote(string, q = "'")
+            }
             sql_expr_buffer <- c(sql_expr_buffer, string)
           } else if (mode == 14) { # informix derived nasis group
             attr(x, 'CVIR_INFORMIX_DERIVE_NASIS_GROUP') <- c(attr(x, 'CVIR_INFORMIX_DERIVE_NASIS_GROUP'), string)
@@ -141,12 +168,15 @@ process.CVIRScript <- function(x) {
         } else if (k == 15) { # JOIN/TO
           if (mode == 7)
             mode <- 8
-        } else if (k == 154 | k == 155 | k == 252 | k == 65) { # AND/OR/;/.
+        } else if (k == 154 | k == 155 | k == 252 | k == 65 | k == 69 | k == 235) { # AND/OR/;/./,/IN
           if (mode == 8) {
             mode <- 7
           }
           if (mode == 7) {
             attr(x, 'CVIR_SQL_WHERE') <- c(attr(x, 'CVIR_SQL_WHERE'), sql_expr_buffer, id_to_token(k))
+            if (k == 235) {
+              uncode_strings <- TRUE
+            }
             sql_expr_buffer <- character(0)
           } else if (mode == 17) {
             expr <- attr(x, 'INFORMIX_DEFINE_EXPRESSION')
@@ -193,7 +223,7 @@ process.CVIRScript <- function(x) {
           } else if (mode == 17) {
             informix_expr_buffer <- c(informix_expr_buffer, id_to_token(k))
           }
-        } else if (k == 146) {# DEFINE
+        } else if (k == 146 | k == 147) {# DEFINE/ASSIGN
           if (mode == 0) {
             mode <- 16
           }
@@ -202,6 +232,10 @@ process.CVIRScript <- function(x) {
             attr(x, 'CVIR_SQL_WHERE') <- c(attr(x, 'CVIR_SQL_WHERE'), sql_expr_buffer, id_to_token(k))
             sql_expr_buffer <- character(0)
           } else if (mode == 17) { # informix define
+            informix_expr_buffer <- c(informix_expr_buffer, id_to_token(k))
+          }
+        } else {
+          if (mode == 17) {
             informix_expr_buffer <- c(informix_expr_buffer, id_to_token(k))
           }
         }
@@ -214,20 +248,102 @@ process.CVIRScript <- function(x) {
     j <- j + i_n
   }
   #TODO
-  debug = TRUE
+  debug = FALSE
   if (!debug) {
     attr(x, 'data') <- NULL
     attr(x, 'numeric') <- NULL
     attr(x, 'string') <- NULL
   }
+  attr(x, 'TSQL') <- parseCVIR_SQL(x)
   # attr(x, 'result') <- buf
   x
 }
 
 #' @export
-#' @rdname process
-process <- function(x) UseMethod("process", x)
+#' @rdname parseCVIR
+parseCVIR <- function(x) UseMethod("parseCVIR", x)
 
+
+#' Initiate a CVIRScript from character string
+#' @param x a character vector containing CVIR code
+#'
+#' @export
+#' @aliases CVIRScript
+#' @rdname CVIRScript
+CVIRScript.character <- function(x) {
+  # sanitize and make look nice (not necessary, but easier to debug)
+  res <- paste0(capitalizeKeywords(cleanCVIR(x)), collapse = "\n")
+
+  # lexing
+  xhr <- strsplit(res, "")[[1]]
+  blk <- .lex3(.lex2(.lex1(xhr), token_to_id(xhr), xhr))
+
+  # DOT termination code denoting ends of statements
+  instructions <- do.call('c', blk)
+  .dots <- instructions == c(DOT = 65)
+  ii <- which(.dots)
+  idx <- cumsum(.dots)
+  idx[ii] <- idx[ii] - 1
+
+  # split into blocks
+  statements <- split(instructions, idx)
+  statement_blocks <- split(1:length(do.call('c', statements)), idx)
+  statement_blocks <- lapply(1:length(statements), function(i) statement_blocks[[i]][statements[[i]] != 65 & statements[[i]] != 0])
+
+  # create CVIRScript
+  attributes(statements) <- attributes(blk)
+  attr(statements, 'class') <- 'CVIRScript' # S3 class CVIRScript, a list of (named) numeric vector with attributes
+
+  # parse blocks
+  parseCVIR(statements)
+}
+
+#' @export
+#' @rdname CVIRScript
+CVIRScript <- function(x) UseMethod("CVIRScript", x)
+
+#' @importFrom soilDB get_NASIS_pkey_by_name get_NASIS_fkey_by_name
+parseCVIR_SQL.CVIRScript <- function(x) {
+
+  # extract SQL tables and columns
+  bt <- attr(x, "CVIR_BASE_TABLE")
+  jt <- attr(x, "CVIR_SQL_TABLES")
+  jt <- jt[jt != bt]
+  co <- attr(x, "CVIR_SQL_COLUMNS")
+  wh <- attr(x, "CVIR_SQL_WHERE")
+  so <- paste0(attr(x, 'CVIR_INFORMIX_SORT_BY'), collapse = ",")
+
+  bpk <- soilDB::get_NASIS_table_key_by_name(bt)
+  jpk <- soilDB::get_NASIS_table_key_by_name(jt)
+
+  co <- c(co, bpk$pkey, jpk$pkey)
+  so <- c(paste0(bt, ".", bpk$pkey), so)
+  if (wh[1] == "AND") {
+    wh = wh[-1]
+  }
+  if (wh[length(wh)] == ";") {
+    wh <- wh[-length(wh)]
+  }
+  paste0(
+    "SELECT ",
+    paste0(co, collapse = ', '),
+    " FROM ",
+    bt,
+    " ",
+    paste0(
+      paste0("INNER JOIN ", jt, " ON ",
+             bt, ".", bpk, " = ",
+             jt, ".", jpk$fkey),
+      collapse = "\n"
+    ),
+    " WHERE ",
+    paste0(wh, collapse = " "),
+    " ORDER BY ",
+    paste0(so, collapse = ", ")
+  )
+}
+
+parseCVIR_SQL <- function(x) UseMethod("parseCVIR_SQL", x)
 
 #' "pop" data off the CVIRScript stack
 #'
@@ -239,6 +355,7 @@ process <- function(x) UseMethod("process", x)
 #' @export
 #' @aliases pop
 #' @rdname pop
+#' @importFrom utils head
 pop.CVIRScript <- function(x, instruction, n = 1, what = "value") {
   att <- switch(as.character(instruction),
                 `84` = "numeric_literals",
@@ -248,7 +365,7 @@ pop.CVIRScript <- function(x, instruction, n = 1, what = "value") {
                 `220` = "string_literals",
                 `STRING_LITERAL` = "string_literals")
   ax <- attr(x, att)
-  res <- head(ax, n)
+  res <- utils::head(ax, n)
   if (n >= 1) {
     ax <- ax[-(1:n),]
   }
@@ -259,20 +376,12 @@ pop.CVIRScript <- function(x, instruction, n = 1, what = "value") {
 
 #' @export
 #' @rdname pop
-pop <- function(x, instruction, n = 1, what = "value") {
-  UseMethod("pop", x)
-}
+pop <- function(x, instruction, n = 1, what = "value") UseMethod("pop", x)
 
-
+# helpers for getting stack attributes from CVIRScript
 CVIRData.default <- function(x) UseMethod("CVIRData", x)
-CVIRData.CVIRScript <- function(x) {
-  attr(x, "data_identifiers")
-}
+CVIRData.CVIRScript <- function(x) attr(x, "data_identifiers")
 CVIRString.default <- function(x) UseMethod("CVIRString", x)
-CVIRString.CVIRScript <- function(x) {
-  attr(x, "string_literals")
-}
+CVIRString.CVIRScript <- function(x) attr(x, "string_literals")
 CVIRNumeric.default <- function(x) UseMethod("CVIRNumeric", x)
-CVIRNumeric.CVIRScript <- function(x) {
-  attr(x, "numeric_literals")
-}
+CVIRNumeric.CVIRScript <- function(x) attr(x, "numeric_literals")
