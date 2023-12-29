@@ -42,8 +42,7 @@ parseCVIR.CVIRScript <- function(x) {
           if (mode == 2) { # setting base table
             x <- pop(x, k)
             base_table <- attr(x, 'data')
-
-            if (is_NASIS_table(base_table)) {
+            if (length(base_table) && is_NASIS_table(base_table)) {
               message("The base table is: ", base_table)
               attr(x, 'CVIR_BASE_TABLE') <- base_table
             }
@@ -52,16 +51,17 @@ parseCVIR.CVIRScript <- function(x) {
             x <- pop(x, k)
             sql_column <- attr(x, 'data')
 
-            message("Added SQL column to script data: ", sql_column)
-            attr(x, 'CVIR_SQL_COLUMNS') <- c(attr(x, 'CVIR_SQL_COLUMNS'), sql_column)
+            if (length(sql_column) > 0) {
+              message("Added SQL column to script data: ", sql_column)
+              attr(x, 'CVIR_SQL_COLUMNS') <- c(attr(x, 'CVIR_SQL_COLUMNS'), sql_column)
+            }
           } else if (mode == 6) { # SQL FROM tables
             x <- pop(x, k)
             sql_table <- attr(x, 'data')
-
             base_table <- attr(x, 'CVIR_BASE_TABLE')
             if (is.null(base_table))
               base_table <- ""
-            if (sql_table == "default") {
+            if (length(sql_table) && sql_table == "default") {
               attr(x, 'CVIR_SQL_DEFAULT_JOIN') <- TRUE
               sql_table <- character(0)
             }
@@ -85,29 +85,42 @@ parseCVIR.CVIRScript <- function(x) {
             attr(x, 'CVIR_SQL_JOIN_TABLES') <- c(attr(x, 'CVIR_SQL_JOIN_TABLES'), sql_table)
           } else if (mode == 10) { # informix sort by columns
             x <- pop(x, k)
-            attr(x, 'CVIR_INFORMIX_SORT_BY') <- c(attr(x, 'CVIR_INFORMIX_SORT_BY'), attr(x, 'data'))
+            if (length(attr(x, 'data')) > 0 && nchar(attr(x, 'data')) > 0)
+              attr(x, 'CVIR_INFORMIX_SORT_BY') <- c(attr(x, 'CVIR_INFORMIX_SORT_BY'), attr(x, 'data'))
           } else if (mode == 11) { # informix aggregate columns
             x <- pop(x, k)
-            attr(x, 'CVIR_INFORMIX_AGGREGATE') <- c(attr(x, 'CVIR_INFORMIX_AGGREGATE'), attr(x, 'data'))
+            if (length(attr(x, 'data')) > 0)
+              attr(x, 'CVIR_INFORMIX_AGGREGATE') <- c(attr(x, 'CVIR_INFORMIX_AGGREGATE'), attr(x, 'data'))
           } else if (mode == 12) { # informix derived columns
             x <- pop(x, k)
-            attr(x, 'CVIR_INFORMIX_DERIVE') <- c(attr(x, 'CVIR_INFORMIX_DERIVE'), attr(x, 'data'))
+            if (length(attr(x, 'data')) > 0)
+              attr(x, 'CVIR_INFORMIX_DERIVE') <- c(attr(x, 'CVIR_INFORMIX_DERIVE'), attr(x, 'data'))
           } else if (mode == 13) { # informix derived columns
             x <- pop(x, k)
-            attr(x, 'CVIR_INFORMIX_DERIVE_FROM') <- c(attr(x, 'CVIR_INFORMIX_DERIVE_FROM'), attr(x, 'data'))
+            if (length(attr(x, 'data')) > 0)
+              attr(x, 'CVIR_INFORMIX_DERIVE_FROM') <- c(attr(x, 'CVIR_INFORMIX_DERIVE_FROM'), attr(x, 'data'))
           } else if (mode == 16) { # define custom columns
             x <- pop(x, k)
             new_column <- attr(x, 'data')
-            attr(x, 'CVIR_INFORMIX_DEFINE') <- c(attr(x, 'CVIR_INFORMIX_DEFINE'), new_column)
-            informix_define <- new_column
-            mode <- 17
+            if (length(attr(x, 'data')) > 0) {
+              attr(x, 'CVIR_INFORMIX_DEFINE') <- c(attr(x, 'CVIR_INFORMIX_DEFINE'), new_column)
+              informix_define <- new_column
+              mode <- 17
+            } else {
+              print("unexplored branch")
+              mode <- 0 # TODO: check this
+            }
           } else if (mode == 17) { # defined with expressions involving other data
             x <- pop(x, k)
-            informix_expr_buffer <- c(informix_expr_buffer, attr(x, 'data'))
+            if (length(attr(x, 'data')) > 0) {
+              informix_expr_buffer <- c(informix_expr_buffer, attr(x, 'data'))
+            }
           } else if (mode == 18) {
             x <- pop(x, k)
-            new_column <- attr(x, 'data')
-            attr(x, 'CVIR_INFORMIX_ACCEPT') <- c(attr(x, 'CVIR_INFORMIX_ACCEPT'), new_column)
+            if (length(attr(x, 'data')) > 0) {
+              new_column <- attr(x, 'data')
+              attr(x, 'CVIR_INFORMIX_ACCEPT') <- c(attr(x, 'CVIR_INFORMIX_ACCEPT'), new_column)
+            }
           }
 
         } else if (k == 84) {# numeric
@@ -183,9 +196,12 @@ parseCVIR.CVIRScript <- function(x) {
             initial <- character(0)
             if (length(informix_define) > 0)
               initial <- expr[[informix_define]]
-            expr[[informix_define]] <- c(initial, informix_expr_buffer, id_to_token(k))
-            attr(x, 'INFORMIX_DEFINE_EXPRESSION') <- expr
-            informix_expr_buffer <- character(0)
+            new <- c(initial, informix_expr_buffer, id_to_token(k))
+            if (length(informix_define) && length(new)) {
+              expr[[informix_define]] <- new
+              attr(x, 'INFORMIX_DEFINE_EXPRESSION') <- expr
+              informix_expr_buffer <- character(0)
+            }
           }
           if (k == 252 | k == 65) { # semicolon denotes end of SQL; . is end of expression
             informix_define <- character(0)
