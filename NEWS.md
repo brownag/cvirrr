@@ -1,3 +1,6 @@
+# cvirrr 0.0.0.9004
+* Bug fixes for `parseCVIR()` and `parseCVIR_SQL()` parsing applied to property scripts
+
 # cvirrr 0.0.0.9003
 * Add `NASIS_CALCULATIONS` dataset
 * Add CVIR parser

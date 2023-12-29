@@ -324,38 +324,37 @@ parseCVIR_SQL.CVIRScript <- function(x) {
   # extract SQL tables and columns
   bt <- attr(x, "CVIR_BASE_TABLE")
   jt <- attr(x, "CVIR_SQL_TABLES")
-  jt <- jt[jt != bt]
+  jt <- unique(jt[!jt %in% bt])
   co <- attr(x, "CVIR_SQL_COLUMNS")
   wh <- attr(x, "CVIR_SQL_WHERE")
-  so <- paste0(attr(x, 'CVIR_INFORMIX_SORT_BY'), collapse = ",")
+  so <- attr(x, 'CVIR_INFORMIX_SORT_BY')
 
   bpk <- soilDB::get_NASIS_table_key_by_name(bt)
   jpk <- soilDB::get_NASIS_table_key_by_name(jt)
 
-  co <- c(co, bpk$pkey, jpk$pkey)
-  so <- c(paste0(bt, ".", bpk$pkey), so)
-  if (wh[1] == "AND") {
+  co <- unique(c(co, bpk$pkey, jpk$pkey))
+  so <- unique(c(paste0(bt, ".", bpk$pkey), so))
+  if (length(wh) && wh[1] == "AND") {
     wh = wh[-1]
   }
-  if (wh[length(wh)] == ";") {
+  if (length(wh) && wh[length(wh)] == ";") {
     wh <- wh[-length(wh)]
   }
   paste0(
     "SELECT ",
-    paste0(co, collapse = ', '),
+    paste(co, collapse = ', '),
     " FROM ",
     bt,
     " ",
-    paste0(
+    ifelse(length(jt), paste(
       paste0("INNER JOIN ", jt, " ON ",
-             bt, ".", bpk, " = ",
+             bt, ".", bpk$pkeyref, " = ",
              jt, ".", jpk$fkey),
       collapse = "\n"
-    ),
-    " WHERE ",
-    paste0(wh, collapse = " "),
-    " ORDER BY ",
-    paste0(so, collapse = ", ")
+    ), ""),
+    ifelse(length(wh),
+    paste0(c(" WHERE", wh), collapse = " "), ""),
+    ifelse(length(so), paste(c(" ORDER BY", paste(so, collapse = ", ")), collapse = " "), "")
   )
 }
 
