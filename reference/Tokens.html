@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">cvirrr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.0.0.9002</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.0.0.9004</span>
       </span>
     </div>
 
@@ -47,35 +47,42 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">is_keyword</span><span class="op">(</span><span class="va">token</span><span class="op">)</span>
-
-<span class="fu">token_to_id</span><span class="op">(</span><span class="va">token</span><span class="op">)</span>
-
-<span class="fu">id_to_token</span><span class="op">(</span><span class="va">id</span>, convert_punctuation <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">is_keyword</span><span class="op">(</span><span class="va">token</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">token_to_id</span><span class="op">(</span><span class="va">token</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">id_to_token</span><span class="op">(</span><span class="va">id</span>, convert_punctuation <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>token</dt>
 <dd><p>Token Label</p></dd>
+
+
 <dt>id</dt>
 <dd><p>Internal Token Byte Value</p></dd>
+
+
 <dt>convert_punctuation</dt>
 <dd><p>For `id_to_token()`: Convert Token ID to user-level syntax (`TRUE`) or internal label (`FALSE`); Default: `TRUE`</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>a numeric vector of token IDs (`token_to_id()`), or a character vector of token labels or syntax (`id_to_token()`)</p>
+    
+
+<p>a numeric vector of token IDs (`token_to_id()`), or a character vector of token labels or syntax (`id_to_token()`)</p>
     </div>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"></span>
-<span class="r-in"><span class="fu">token_to_id</span><span class="op">(</span><span class="st">"DERIVE"</span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu">token_to_id</span><span class="op">(</span><span class="st">"DERIVE"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> DERIVE </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    141 </span>
-<span class="r-in"></span>
-<span class="r-in"><span class="fu">id_to_token</span><span class="op">(</span><span class="fl">317</span><span class="op">)</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu">id_to_token</span><span class="op">(</span><span class="fl">317</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "%"</span>
 </code></pre></div>
     </div>
@@ -91,7 +98,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer></div>
