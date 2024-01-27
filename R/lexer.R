@@ -3,22 +3,25 @@
 #' @importFrom data.table rbindlist
 .lex1 <- function(chr) {
   y <- vector("numeric", length(chr))
-
+  
   .is_whitespace <- function(x)  x %in% c("\n", " ", "\t")
   .is_identifier <- function(x) grepl("[A-Za-z_0-9]", x)
   .is_punctuation <- function(x)  grepl("[\\[\\]\\{\\}]|-|,|\\(|\\)|\\.|\\:|\\?|\\*|<|\\=|>|/|\\\"|\\;", x)
+  .is_decimal <- function(x) grepl("#", x)
   .is_quoted <- function(x) as.logical(cumsum(x == "\"") %% 2)
 
   widx <- .is_whitespace(chr)
   iidx <- .is_identifier(chr)
   pidx <- .is_punctuation(chr)
   qidx <- .is_quoted(chr)
+  didx <- .is_decimal(chr)
   y[widx] <- 1
   y[iidx] <- 2
   y[pidx] <- 3
   y[qidx] <- 4
+  y[didx] <- 5
 
-  lr <- factor(y, levels = 0:4, labels = c("unknown", "whitespace", "identifier", "punctuation", "string"))
+  lr <- factor(y, levels = 0:5, labels = c("unknown", "whitespace", "identifier", "punctuation", "string", "decimal"))
   gr <- cumsum(c(0, abs(diff(as.integer(lr))) > 0)) + 1
   res <- split(1:length(lr), f = list(gr))
   .N <- NULL; type <- NULL; group <- NULL
@@ -143,6 +146,7 @@
 
   # remove whitespace now that strings have been parsed
   token_info <- attr(block, 'token_info')
+  
   wht <- token_info[token_info$type == "whitespace",]$group
   if (length(wht) > 0) {
     block[wht] <- list(0)[rep(1, length(wht))]
@@ -166,30 +170,60 @@
   # each unique instance will be assigned a pointer that identifies their label and value as needed
   # once the source data for script have been loaded can be compared against defined data elements or evaluated as needed
   identifiers <- sapply(block, function(x) length(x) >= 1 & is.character(x))
-  identifiers[!identifiers] <- NA
+  identifiers[!identifiers] <- FALSE
 
   # get the full names and corresponding block/identifier IDs
-  all_block_ids <- which(!is.na(identifiers))
-  identifiers[all_block_ids] <- 1:sum(identifiers, na.rm = TRUE)
+  all_block_ids <- identifiers
+  multipart_ids <- diff(c(0, which(all_block_ids))) == 1
+  
+  # identify numeric literals containing decimals or multiple digits
+  rlblk <- rle(all_block_ids)
+  multipart_ids2 <- multipart_ids
+  multipart_ids2[!multipart_ids2] <- NA
+  multipart_ids2 <- !multipart_ids2
+  multipart_ids2[which(rlblk$lengths[rlblk$values] > 1)] <- TRUE
+  multipart_ids2[is.na(multipart_ids2)] <- FALSE
+  grp <- cumsum(multipart_ids2)
+  
+  # combine numeric components to a single identifier
+  for (i in seq_len(max(grp))) {
+    j <- which(grp == i)
+    j1 <- j[1]
+    block[all_block_ids][j1] <- paste0(block[all_block_ids][j], collapse = "")
+    j <- j[-1]
+    all_block_ids[all_block_ids][j] <- NA
+    identifiers <- all_block_ids[!is.na(all_block_ids)]
+    block[which(is.na(all_block_ids))] <- NULL
+    token_info <- token_info[-which(is.na(all_block_ids)),]
+    token_info$length[which(all_block_ids)[j1]] <- length(j) + 1
+    attr(block, 'token_info') <- token_info
+  }
+  
+  # collapse identifiers
+  all_block_ids <- na.omit(all_block_ids)
+  identifiers[all_block_ids] <- 1:length(block[all_block_ids])
   all_identifiers <- sapply(block[all_block_ids], paste0, collapse = "")
 
-  # identify those that can be converted to numeric (start/end/only contain digits; TODO: decimal point?)
-  numerics <- suppressWarnings(as.numeric(all_identifiers))
+  # identify those that can be converted to numeric 
+  numerics <- suppressWarnings(as.numeric(gsub("#", ".", all_identifiers)))
   is_numeric <- !is.na(numerics)
   numeric_literals <- data.frame(uid = which(is_numeric), value = numerics[is_numeric])
   numeric_literals$group_id <- match(numerics[is_numeric], unique(numerics[is_numeric]))
-  numeric_literals$block_id <- all_block_ids[is_numeric]
-  block[!is.na(identifiers)][is_numeric] <- c(`NUMERIC` = 84)
+  numeric_literals$block_id <- which(all_block_ids)[is_numeric]
+  block[identifiers > 0][is_numeric] <- c(`NUMERIC` = 84)
 
-  # the rest of the identifiers need are defined by some data reference
+  # the rest of the identifiers are defined by some data reference
   data_identifiers <- data.frame(uid = which(!is_numeric), value = all_identifiers[!is_numeric])
   data_identifiers$group_id <- match(all_identifiers[!is_numeric], unique(all_identifiers[!is_numeric]))
-  data_identifiers$block_id = all_block_ids[!is_numeric]
-  block[!is.na(identifiers)][!is_numeric] <- c(`VARIABLE` = 97) # TODO: is this the best bytecode for these?
+  data_identifiers$block_id = which(all_block_ids)[!is_numeric]
+  block[identifiers > 0][!is_numeric] <- c(`VARIABLE` = 97) # TODO: is this the best bytecode for these?
+  
   # there are more specific things like COLUMN, SQL_COLUMN... next lex step?
   stridx <- numeric(0)
-  if (length(stri) > 0)
-    stridx <- 1:length(stri) + length(is_numeric)
+  if (length(stri) > 0) {
+    stridx <- seq(stri) + length(which(is_numeric))
+  }
+  
   string_literals <- data.frame(
     uid = stridx,
     value = strv,

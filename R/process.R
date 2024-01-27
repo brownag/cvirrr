@@ -290,6 +290,10 @@ CVIRScript.character <- function(x) {
   # sanitize and make look nice (not necessary, but easier to debug)
   res <- paste0(capitalizeKeywords(cleanCVIR(x)), collapse = "\n")
 
+  # add implicit leading zeros to decimals
+  # repurpose pound sign to distinguish DOT (0x41) from DECIMAL (0x10a)
+  res <- gsub("([0-9])\\.([0-9])", "\\1#\\2", gsub("(\\.[0-9]+\\.*[0-9]*)", "0\\1", res))
+  
   # lexing
   xhr <- strsplit(res, "")[[1]]
   blk <- .lex3(.lex2(.lex1(xhr), token_to_id(xhr), xhr))

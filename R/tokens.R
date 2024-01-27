@@ -386,7 +386,7 @@ getCVIRPunctuation <- function() c(
   SQL_TABLE_SPEC = "inner",
   SQL_CVIR_WHERE_CONDITION = "where",
   DOT = ".",# 0x41,
-  COMMENT = "#", #0x42,
+  # COMMENT = "#", #0x42, # repurposed in lexer for DECIMAL, assuming comments have been stripped out
   COMMA = ",",# 0x45,
   COLON = ":", #0x65,
   DIVIDE = "/", #  0x6b,
